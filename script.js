@@ -1,3 +1,27 @@
+// ==================== SUPABASE CONFIGURATION ====================
+// GANTI DENGAN KREDENSIAL SUPABASE ANDA
+const SUPABASE_URL = 'https://oksizghhxhbeujtsodou.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rc2l6Z2hoeGhiZXVqdHNvZG91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3Nzc0OTYsImV4cCI6MjA4MTM1MzQ5Nn0.cPUrc8c1WlUwvnJWOYQAYfUCnugNhOrXQx482Zkbx_Y';
+
+// Initialize Supabase client dengan pengecekan
+let supabase = null;
+
+function initSupabase() {
+    try {
+        if (window.supabase && window.supabase.createClient) {
+            supabase = window.supabase.createClient('https://oksizghhxhbeujtsodou.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rc2l6Z2hoeGhiZXVqdHNvZG91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3Nzc0OTYsImV4cCI6MjA4MTM1MzQ5Nn0.cPUrc8c1WlUwvnJWOYQAYfUCnugNhOrXQx482Zkbx_Y');
+            console.log('✅ Supabase initialized');
+            return true;
+        } else {
+            console.warn('⚠️ Supabase library not loaded yet');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Error initializing Supabase:', error);
+        return false;
+    }
+}
+
 // ==================== SMOOTH SCROLL NAVIGATION ====================
 function smoothScrollTo(targetId) {
     const target = document.querySelector(targetId);
@@ -32,6 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Initialize Supabase setelah DOM ready
+    initSupabase();
+    
+    // Initialize app
     initializeApp();
 });
 
@@ -362,6 +390,15 @@ let currentPage = 1;
 
 // Add new feedback to Supabase
 async function addComment(name, email, message) {
+    // Cek apakah Supabase sudah diinisialisasi
+    if (!supabase) {
+        const initialized = initSupabase();
+        if (!initialized) {
+            alert('❌ Koneksi database belum siap. Pastikan Supabase sudah dikonfigurasi dengan benar.');
+            return;
+        }
+    }
+
     try {
         // Show loading state
         const submitBtn = document.querySelector('.btn-submit');
@@ -396,7 +433,7 @@ async function addComment(name, email, message) {
 
     } catch (error) {
         console.error('Error adding comment:', error);
-        alert('❌ Gagal mengirim feedback. Silakan coba lagi.');
+        alert('❌ Gagal mengirim feedback. Silakan coba lagi.\n\nDetail error: ' + error.message);
         
         // Restore button
         const submitBtn = document.querySelector('.btn-submit');
@@ -410,9 +447,21 @@ async function loadComments() {
     const commentsContainer = document.getElementById('comments-container');
     const paginationContainer = document.getElementById('pagination');
 
+    if (!commentsContainer) return;
+
+    // Cek apakah Supabase sudah diinisialisasi
+    if (!supabase) {
+        const initialized = initSupabase();
+        if (!initialized) {
+            commentsContainer.innerHTML = '<p class="no-comments">⚠️ Database belum tersedia. Pastikan Supabase sudah dikonfigurasi.</p>';
+            if (paginationContainer) paginationContainer.innerHTML = '';
+            return;
+        }
+    }
+
     // Show loading state
     commentsContainer.innerHTML = '<p class="no-comments">Memuat feedback...</p>';
-    paginationContainer.innerHTML = '';
+    if (paginationContainer) paginationContainer.innerHTML = '';
 
     try {
         // Get all feedbacks, ordered by newest first
@@ -466,13 +515,13 @@ async function loadComments() {
         });
 
         // Render pagination if needed
-        if (totalPages > 1) {
+        if (totalPages > 1 && paginationContainer) {
             renderPaginationButtons(totalPages, paginationContainer);
         }
 
     } catch (error) {
         console.error('Error loading comments:', error);
-        commentsContainer.innerHTML = '<p class="no-comments">❌ Gagal memuat feedback. Silakan refresh halaman.</p>';
+        commentsContainer.innerHTML = '<p class="no-comments">❌ Gagal memuat feedback. Silakan refresh halaman.<br>Detail: ' + error.message + '</p>';
     }
 }
 
@@ -484,7 +533,8 @@ function renderPaginationButtons(totalPages, container) {
         prevBtn.onclick = () => {
             currentPage--;
             loadComments();
-            document.getElementById('feedback-list').scrollIntoView({ behavior: 'smooth' });
+            const feedbackList = document.getElementById('feedback-list');
+            if (feedbackList) feedbackList.scrollIntoView({ behavior: 'smooth' });
         };
         container.appendChild(prevBtn);
     }
@@ -496,7 +546,8 @@ function renderPaginationButtons(totalPages, container) {
         btn.onclick = () => {
             currentPage = i;
             loadComments();
-            document.getElementById('feedback-list').scrollIntoView({ behavior: 'smooth' });
+            const feedbackList = document.getElementById('feedback-list');
+            if (feedbackList) feedbackList.scrollIntoView({ behavior: 'smooth' });
         };
         container.appendChild(btn);
     }
@@ -508,7 +559,8 @@ function renderPaginationButtons(totalPages, container) {
         nextBtn.onclick = () => {
             currentPage++;
             loadComments();
-            document.getElementById('feedback-list').scrollIntoView({ behavior: 'smooth' });
+            const feedbackList = document.getElementById('feedback-list');
+            if (feedbackList) feedbackList.scrollIntoView({ behavior: 'smooth' });
         };
         container.appendChild(nextBtn);
     }
